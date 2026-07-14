@@ -1,7 +1,12 @@
 "use client";
 
-import App from "../components/App";
+import { AppProvider } from "../components/AppContext";
+import PublicLandingPage from "../components/PublicLandingPage";
 
-export default function HomePage() {
-  return <App />;
+export default function RootPage() {
+  return (
+    <AppProvider initialTab="dashboard">
+      <PublicLandingPage />
+    </AppProvider>
+  );
 }

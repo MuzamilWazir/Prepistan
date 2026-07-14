@@ -65,17 +65,7 @@ export default function AuthPage() {
   };
 
   if (publicTab === "home") {
-    return (
-      <PublicLandingPage
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        onStartPrep={(tab) => {
-          setAuthTab(tab);
-          setPublicTab("auth");
-        }}
-        onDemoBypass={handleDemoBypass}
-      />
-    );
+    return <PublicLandingPage />;
   }
 
   return (

@@ -2,11 +2,13 @@
 
 import { AppProvider } from "../../components/AppContext";
 import PublicLandingPage from "../../components/PublicLandingPage";
+import ToastContainer from "../../components/ToastContainer";
 
 export default function HomePage() {
   return (
     <AppProvider initialTab="dashboard">
       <PublicLandingPage />
+      <ToastContainer />
     </AppProvider>
   );
 }

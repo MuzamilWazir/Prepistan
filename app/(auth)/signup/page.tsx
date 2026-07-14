@@ -1,26 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, Sun, Moon, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Sun, Moon, ArrowLeft } from "lucide-react";
 import { AppProvider, useApp } from "../../../components/AppContext";
+import ToastContainer from "../../../components/ToastContainer";
 
-function LoginForm() {
+function SignupForm() {
   const router = useRouter();
-  const { darkMode, setDarkMode, handleTraditionalLogin, currentUser } = useApp();
+  const { darkMode, setDarkMode, handleTraditionalRegister, currentUser } = useApp();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (currentUser.isLoggedIn) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser.isLoggedIn) {
+      router.replace("/dashboard");
+    }
+  }, [currentUser.isLoggedIn, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    handleTraditionalLogin(email, password);
-    router.push("/dashboard");
+    setLoading(true);
+    try {
+      await handleTraditionalRegister(name, email, password, "Student");
+      router.replace("/dashboard");
+    } catch {
+      setLoading(false);
+    }
   };
+
+  if (currentUser.isLoggedIn) return null;
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 ${darkMode ? "dark bg-[#0F172A]" : "bg-slate-50"} transition-colors duration-200 font-sans`}>
@@ -46,21 +57,25 @@ function LoginForm() {
               <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-300 font-bold">Competitive Arena</span>
             </div>
           </div>
-          <h1 className="text-xl font-black font-display tracking-tight">Welcome Back</h1>
-          <p className="text-[11px] text-slate-300 mt-2">Sign in to continue your exam preparation</p>
+          <h1 className="text-xl font-black font-display tracking-tight">Create Your Free Account</h1>
+          <p className="text-[11px] text-slate-300 mt-2">Join 1,420+ aspirants preparing for CSS, PMS, PPSC, NTS & more</p>
         </div>
 
         <div className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Syed Murtaza" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" required />
+              </div>
+            </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" required />
               </div>
-              <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">
-                Tip: Enter <code className="font-mono text-emerald-600">admin@prepistan.pk</code> to auto-login as Super Admin!
-              </p>
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
@@ -69,16 +84,22 @@ function LoginForm() {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" required />
               </div>
             </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/10 hover:shadow-lg transition-all flex items-center justify-center gap-1.5 group">
-              <span>Sign In to Arena</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/10 hover:shadow-lg transition-all flex items-center justify-center gap-1.5 group disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? (
+                <span className="animate-pulse">Creating account...</span>
+              ) : (
+                <>
+                  <span>Create Free Account</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              Don&apos;t have an account?{" "}
-              <button onClick={() => router.push("/auth/signup")} className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Create Free Account</button>
+              Already have an account?{" "}
+              <button onClick={() => router.push("/login")} className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Sign In</button>
             </span>
           </div>
         </div>
@@ -87,10 +108,11 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <AppProvider initialTab="dashboard">
-      <LoginForm />
+      <SignupForm />
+      <ToastContainer />
     </AppProvider>
   );
 }

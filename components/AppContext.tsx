@@ -5,6 +5,7 @@ import {
   MCQ,
   UserRole,
   QuizAttempt,
+  QuizMode,
   BlogArticle,
   SystemNotification,
   QuestionDiscussion,
@@ -16,6 +17,13 @@ import {
 import { initialMCQs } from "../data/mockMcqs";
 import { extraMCQs } from "../data/extraMcqs";
 import { initialCourses, initialCategories } from "./CoursesPage";
+import {
+  apiRegister,
+  apiLogin,
+  apiGetCurrentUser,
+  apiLogout,
+  apiGetQuizHistory,
+} from "../lib/api";
 
 const defaultAIConfig: AITutorApiConfig = {
   activeApi: "gemini",
@@ -53,6 +61,12 @@ const defaultAIConfig: AITutorApiConfig = {
   },
 };
 
+interface AppToast {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info";
+}
+
 interface AppContextType {
   currentUser: { name: string; email: string; isLoggedIn: boolean; provider: string };
   setCurrentUser: React.Dispatch<React.SetStateAction<{ name: string; email: string; isLoggedIn: boolean; provider: string }>>;
@@ -87,7 +101,10 @@ interface AppContextType {
   userCoins: number;
   setUserCoins: React.Dispatch<React.SetStateAction<number>>;
   userStreak: number;
+  longestStreak: number;
   quizConfig: { category: string; subject: string; mode: "Practice Mode" | "Timed Test" | "Mock Test"; questions: MCQ[] } | null;
+  toasts: AppToast[];
+  showToast: (message: string, type?: AppToast["type"]) => void;
   handleLogout: () => void;
   handleNavigate: (page: string) => void;
   handleStartQuiz: (category: string, subject: string, mode: any, questionCount?: number) => void;
@@ -110,9 +127,9 @@ interface AppContextType {
   handleAddMcqSubject: (newSub: string) => void;
   handleDeleteMcqCategory: (catToDelete: string) => void;
   handleDeleteMcqSubject: (subToDelete: string) => void;
-  handleSocialSubmit: (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => void;
-  handleTraditionalRegister: (name: string, email: string, password: string, role: UserRole) => void;
-  handleTraditionalLogin: (email: string, password: string) => void;
+  handleSocialSubmit: (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => Promise<void>;
+  handleTraditionalRegister: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  handleTraditionalLogin: (email: string, password: string) => Promise<void>;
   handleDemoBypass: (role: UserRole) => void;
 }
 
@@ -125,17 +142,67 @@ export function useApp() {
 }
 
 export function AppProvider({ children, initialTab = "dashboard" }: { children: ReactNode; initialTab?: string }) {
+  const [toasts, setToasts] = useState<AppToast[]>([]);
+
+  const showToast = (message: string, type: AppToast["type"] = "success") => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
+  const [accessToken, setAccessToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("prepistan_token");
+  });
+
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("prepistan_user") : null;
     return saved
       ? JSON.parse(saved)
       : {
-          name: "Murtaza Syed",
-          email: "murtaza@prepistan.pk",
-          isLoggedIn: true,
-          provider: "Email",
+          name: "",
+          email: "",
+          isLoggedIn: false,
+          provider: "",
         };
   });
+
+  // Restore session from token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("prepistan_token");
+    if (token && !currentUser.isLoggedIn) {
+      apiGetCurrentUser(token)
+        .then(({ user }) => {
+          setCurrentUser({ name: user.name, email: user.email, isLoggedIn: true, provider: user.provider });
+          setRole(user.role as UserRole);
+          setPremium(user.isPremium);
+          setUserXp(user.xp);
+          setUserCoins(user.coins);
+          setUserStreak(user.streak);
+          setLongestStreak(user.longestStreak);
+          setBookmarkedIds(user.bookmarkedIds || []);
+          // Fetch quiz history from backend
+          apiGetQuizHistory(token).then(({ attempts }) => {
+            setQuizHistory(attempts.map(a => ({
+              id: a._id,
+              quizMode: a.quizMode as QuizMode,
+              category: a.category,
+              subject: a.subject,
+              totalQuestions: a.totalQuestions,
+              correctAnswers: a.correctAnswers,
+              wrongAnswers: a.wrongAnswers,
+              timeSpentSeconds: a.timeSpentSeconds,
+              date: a.date,
+            })));
+          }).catch(() => {});
+        })
+        .catch(() => {
+          localStorage.removeItem("prepistan_token");
+        });
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -143,10 +210,25 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (accessToken) localStorage.setItem("prepistan_token", accessToken);
+      else localStorage.removeItem("prepistan_token");
+    }
+  }, [accessToken]);
+
   const handleLogout = () => {
+    apiLogout().catch(() => {});
+    setAccessToken(null);
     setCurrentUser({ name: "", email: "", isLoggedIn: false, provider: "" });
     setRole("Student");
     setPremium(false);
+    setUserXp(0);
+    setUserCoins(0);
+    setUserStreak(0);
+    setLongestStreak(0);
+    setBookmarkedIds([]);
+    setQuizHistory([]);
   };
 
   const [currentRole, setRole] = useState<UserRole>("Student");
@@ -171,9 +253,10 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
     }
   }, [aiConfig]);
 
-  const [userXp, setUserXp] = useState(1420);
-  const [userCoins, setUserCoins] = useState(380);
-  const [userStreak, setUserStreak] = useState(5);
+  const [userXp, setUserXp] = useState(0);
+  const [userCoins, setUserCoins] = useState(0);
+  const [userStreak, setUserStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
   const [attemptRegistered, setAttemptRegistered] = useState<string | null>(null);
 
   const [mcqs, setMcqs] = useState<MCQ[]>(() => {
@@ -183,15 +266,10 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
     });
     return merged;
   });
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(["css-pa-01", "css-is-01"]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [pricingOpen, setPricingOpen] = useState(false);
 
-  const [quizHistory, setQuizHistory] = useState<QuizAttempt[]>([
-    { id: "hist-1", quizMode: "Practice Mode", category: "CSS", subject: "Pakistan Affairs", totalQuestions: 10, correctAnswers: 6, wrongAnswers: 4, timeSpentSeconds: 120, date: "2026-07-08" },
-    { id: "hist-2", quizMode: "Timed Test", category: "FPSC", subject: "Islamic Studies", totalQuestions: 10, correctAnswers: 7, wrongAnswers: 3, timeSpentSeconds: 150, date: "2026-07-09" },
-    { id: "hist-3", quizMode: "Mock Test", category: "PMS", subject: "Geography", totalQuestions: 10, correctAnswers: 5, wrongAnswers: 5, timeSpentSeconds: 180, date: "2026-07-10" },
-    { id: "hist-4", quizMode: "Timed Test", category: "PPSC", subject: "English", totalQuestions: 10, correctAnswers: 8, wrongAnswers: 2, timeSpentSeconds: 110, date: "2026-07-11" },
-  ]);
+  const [quizHistory, setQuizHistory] = useState<QuizAttempt[]>([]);
 
   const [articles, setArticles] = useState<BlogArticle[]>([
     {
@@ -395,7 +473,7 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
     notes: "/notes",
     bookmarks: "/bookmarks",
     blog: "/blog",
-    admin: "/admin",
+    admin: "/admin/dashboard",
   };
 
   const handleNavigate = (page: string) => {
@@ -439,7 +517,6 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
       const rewardCoins = attempt.correctAnswers * 2;
       setUserXp((prev) => prev + rewardXp);
       setUserCoins((prev) => prev + rewardCoins);
-      setUserStreak((prev) => prev + 1);
       setNotifications((prev) => [
         { id: `not-win-${Date.now()}`, title: "🏆 Test Completed!", message: `You earned +${rewardXp} XP and +${rewardCoins} Coins. Keep it up!`, date: "Just Now", type: "success", read: false },
         ...prev,
@@ -507,58 +584,113 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
 
   const uniqueCategories = Array.from(new Set(mcqs.flatMap((q) => q.category.split(",").map((c) => c.trim())))) as string[];
 
-  const handleSocialSubmit = (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => {
+  const handleSocialSubmit = async (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => {
     if (!name.trim() || !email.trim()) {
-      alert("Please fill in your name and email.");
+      showToast("Please fill in your name and email.", "error");
       return;
     }
-    setCurrentUser({ name, email, isLoggedIn: true, provider: socialProvider || "Google" });
-    setRole(role || "Student");
-    setPremium(role === "Premium Student" || role === "Super Admin");
+    const userPayload = { name, email, isLoggedIn: true, provider: socialProvider || "Google" };
+    const rolePayload = role || "Student";
+    const isPremiumPayload = role === "Premium Student" || role === "Super Admin";
+    try {
+      const res = await apiRegister({ name, email, password: "social-auth-placeholder" });
+      const loginRes = await apiLogin({ email, password: "social-auth-placeholder" });
+      localStorage.setItem("prepistan_token", loginRes.accessToken);
+      localStorage.setItem("prepistan_user", JSON.stringify({ ...userPayload, name: res.user.name, email: res.user.email }));
+      setAccessToken(loginRes.accessToken);
+      setCurrentUser({ name: res.user.name, email: res.user.email, isLoggedIn: true, provider: socialProvider || "Google" });
+      setRole(res.user.role as UserRole);
+      setPremium(res.user.isPremium);
+      setUserXp(res.user.xp);
+      setUserCoins(res.user.coins);
+      setUserStreak(res.user.streak);
+      setLongestStreak(res.user.longestStreak);
+    } catch {
+      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
+      setCurrentUser(userPayload);
+      setRole(rolePayload as UserRole);
+      setPremium(isPremiumPayload);
+    }
     setNotifications((prev) => [
-      { id: `welcome-${Date.now()}`, title: `Welcome, ${name}!`, message: `You have successfully registered to Prepistan via ${socialProvider}! 500 XP Welcome Bonus has been credited.`, type: "success", date: "Today", read: false },
+      { id: `welcome-${Date.now()}`, title: `Welcome, ${name}!`, message: `You have successfully registered to Prepistan via ${socialProvider}!`, type: "success", date: "Today", read: false },
       ...prev,
     ]);
-    setUserXp((prev) => prev + 500);
   };
 
-  const handleTraditionalRegister = (name: string, email: string, password: string, role: UserRole) => {
+  const handleTraditionalRegister = async (name: string, email: string, password: string, role: UserRole) => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      alert("Please fill in all details.");
+      showToast("Please fill in all details.", "error");
       return;
     }
-    setCurrentUser({ name, email, isLoggedIn: true, provider: "Email" });
-    setRole(role);
-    setPremium(role === "Premium Student" || role === "Super Admin");
+    try {
+      const res = await apiRegister({ name, email, password });
+      const loginRes = await apiLogin({ email, password });
+      const userPayload = { name: res.user.name, email: res.user.email, isLoggedIn: true, provider: "Email" };
+      localStorage.setItem("prepistan_token", loginRes.accessToken);
+      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
+      setAccessToken(loginRes.accessToken);
+      setCurrentUser(userPayload);
+      setRole(res.user.role as UserRole);
+      setPremium(res.user.isPremium);
+      setUserXp(res.user.xp);
+      setUserCoins(res.user.coins);
+      setUserStreak(res.user.streak);
+      setLongestStreak(res.user.longestStreak);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Registration failed";
+      showToast(msg, "error");
+      return;
+    }
+    showToast(`Welcome to Prepistan, ${name}!`, "success");
     setNotifications((prev) => [
-      { id: `welcome-${Date.now()}`, title: "Account Registered Successfully!", message: `Welcome to Prepistan, ${name}! Enjoy offline civil service mock tests and live AI tutoring.`, type: "success", date: "Today", read: false },
+      { id: `welcome-${Date.now()}`, title: "Account Registered Successfully!", message: `Welcome to Prepistan, ${name}!`, type: "success", date: "Today", read: false },
       ...prev,
     ]);
-    setUserXp((prev) => prev + 250);
   };
 
-  const handleTraditionalLogin = (email: string, password: string) => {
+  const handleTraditionalLogin = async (email: string, password: string) => {
     if (!email.trim() || !password.trim()) {
-      alert("Please fill in both email and password.");
+      showToast("Please fill in both email and password.", "error");
       return;
     }
-    const extractedName = email.split("@")[0].replace(/[._-]/g, " ");
-    const formattedName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
-    setCurrentUser({ name: formattedName || "Murtaza Syed", email, isLoggedIn: true, provider: "Email" });
-    if (email.includes("admin")) {
-      setRole("Super Admin");
-      setPremium(true);
-    } else if (email.includes("manager") || email.includes("editor")) {
-      setRole("Content Manager");
-      setPremium(false);
-    } else {
-      setRole("Student");
-      setPremium(false);
+    try {
+      const res = await apiLogin({ email, password });
+      const userPayload = { name: res.user.name, email: res.user.email, isLoggedIn: true, provider: "Email" };
+      localStorage.setItem("prepistan_token", res.accessToken);
+      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
+      setAccessToken(res.accessToken);
+      setCurrentUser(userPayload);
+      setRole(res.user.role as UserRole);
+      setPremium(res.user.isPremium);
+      setUserXp(res.user.xp);
+      setUserCoins(res.user.coins);
+      setUserStreak(res.user.streak);
+      setLongestStreak(res.user.longestStreak);
+      setBookmarkedIds(res.user.bookmarkedIds || []);
+      // Fetch quiz history from backend
+      apiGetQuizHistory(res.accessToken).then(({ attempts }) => {
+        setQuizHistory(attempts.map(a => ({
+          id: a._id,
+          quizMode: a.quizMode as QuizMode,
+          category: a.category,
+          subject: a.subject,
+          totalQuestions: a.totalQuestions,
+          correctAnswers: a.correctAnswers,
+          wrongAnswers: a.wrongAnswers,
+          timeSpentSeconds: a.timeSpentSeconds,
+          date: a.date,
+        })));
+      }).catch(() => {});
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Login failed";
+      showToast(msg, "error");
     }
   };
 
   const handleDemoBypass = (role: UserRole) => {
-    setCurrentUser({ name: "Murtaza Syed", email: "murtaza@prepistan.pk", isLoggedIn: true, provider: "Simulation Bypass" });
+    const userPayload = { name: "Murtaza Syed", email: "murtaza@prepistan.pk", isLoggedIn: true, provider: "Simulation Bypass" };
+    localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
+    setCurrentUser(userPayload);
     setRole(role);
     setPremium(role === "Premium Student" || role === "Super Admin");
   };
@@ -571,7 +703,8 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         pricingOpen, setPricingOpen, mcqs, bookmarkedIds, quizHistory, articles,
         notifications, discussions, courses, courseCategories, mcqCategories, mcqSubjects,
         uniqueCategories, paymentConfig, adsenseConfig, aiConfig, setAiConfig,
-        userXp, userCoins, setUserCoins, userStreak, quizConfig,
+        userXp, userCoins, setUserCoins, userStreak, longestStreak, quizConfig,
+        toasts, showToast,
         handleLogout, handleNavigate, handleStartQuiz, handleNavigateToQuiz,
         handleFinishQuiz, handleToggleBookmark, handlePostDiscussion,
         handleAddMCQ, handleDeleteMCQ, handleAddArticle, handleUpdateArticle,

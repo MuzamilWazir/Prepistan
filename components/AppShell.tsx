@@ -20,7 +20,7 @@ export default function AppShell() {
     currentRole, setRole, isPremium, setPremium, language, setLanguage,
     darkMode, setDarkMode, activeTab, pricingOpen, setPricingOpen,
     notifications, handleMarkNotificationsAsRead, handleNavigate,
-    userXp, userCoins, setUserCoins, userStreak, currentUser, handleLogout,
+    userXp, userCoins, setUserCoins, userStreak, longestStreak, currentUser, handleLogout,
     mcqs, bookmarkedIds, quizHistory, articles, discussions,
     courses, courseCategories, mcqCategories, mcqSubjects, uniqueCategories,
     paymentConfig, adsenseConfig, aiConfig, setAiConfig,
@@ -65,11 +65,12 @@ export default function AppShell() {
               mcqs={mcqs}
               xp={userXp}
               streak={userStreak}
-              longestStreak={7}
+              longestStreak={longestStreak}
               coins={userCoins}
               language={language}
               onNavigate={handleNavigate}
               onOpenPricing={() => setPricingOpen(true)}
+              currentUser={currentUser}
             />
           )}
 

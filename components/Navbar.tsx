@@ -23,7 +23,11 @@ import {
   Trophy,
   Newspaper,
   BookOpenCheck,
-  Video
+  Video,
+  Users,
+  FileSpreadsheet,
+  CreditCard,
+  Brain
 } from "lucide-react";
 import { UserRole, SystemNotification } from "../app/types";
 import {useState} from "react";
@@ -74,7 +78,7 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const rolesList: UserRole[] = ["Student", "Premium Student", "Admin", "Super Admin", "Content Manager"];
+  const rolesList: UserRole[] = ["Student", "Premium Student"];
 
   const handleRoleChange = (role: UserRole) => {
     setRole(role);
@@ -394,6 +398,77 @@ export default function Navbar({
                     </div>
                   </div>
 
+                  {/* Admin Management Links */}
+                  {(currentRole === "Admin" || currentRole === "Super Admin") && (
+                    <div className="p-1 border-b border-slate-100 dark:border-slate-800">
+                      <span className="block px-3 text-[9px] font-bold text-amber-500 uppercase tracking-wider mb-1">
+                        Admin Management
+                      </span>
+                      <div className="space-y-0.5">
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-amber-50 dark:hover:bg-amber-950/20 text-amber-700 dark:text-amber-400 font-semibold"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>Admin Dashboard</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Manage Users</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Manage MCQs</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <Video className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Manage Courses</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Payment Settings</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            window.location.href = "/admin/dashboard";
+                          }}
+                          className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <Brain className="w-3.5 h-3.5 text-slate-400" />
+                          <span>AI Tutor Config</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="p-1">
                     <button
                       onClick={() => {
@@ -483,6 +558,40 @@ export default function Navbar({
                   <div className="text-[10px] text-slate-400 font-normal truncate">{currentUser.email}</div>
                 </div>
                 <div className="p-1">
+                  {(currentRole === "Admin" || currentRole === "Super Admin") && (
+                    <>
+                      <div className="px-2.5 py-1 text-[9px] font-bold text-amber-500 uppercase tracking-wider">Admin</div>
+                      <button
+                        onClick={() => { setProfileOpen(false); window.location.href = "/admin/dashboard"; }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-amber-50 dark:hover:bg-amber-950/20 text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-2"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        Admin Dashboard
+                      </button>
+                      <button
+                        onClick={() => { setProfileOpen(false); window.location.href = "/admin/dashboard"; }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        Manage Users
+                      </button>
+                      <button
+                        onClick={() => { setProfileOpen(false); window.location.href = "/admin/dashboard"; }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        Manage MCQs
+                      </button>
+                      <button
+                        onClick={() => { setProfileOpen(false); window.location.href = "/admin/dashboard"; }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Manage Courses
+                      </button>
+                      <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+                    </>
+                  )}
                   <button
                     onClick={() => {
                       setPremium(!isPremium);

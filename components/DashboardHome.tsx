@@ -44,6 +44,7 @@ interface DashboardHomeProps {
   language: "EN" | "UR";
   onNavigate: (tab: string, arg?: any) => void;
   onOpenPricing: () => void;
+  currentUser: { name: string; email: string; isLoggedIn: boolean; provider?: string };
 }
 
 export default function DashboardHome({
@@ -56,7 +57,8 @@ export default function DashboardHome({
   coins,
   language,
   onNavigate,
-  onOpenPricing
+  onOpenPricing,
+  currentUser
 }: DashboardHomeProps) {
   
   // Calculations
@@ -88,18 +90,8 @@ export default function DashboardHome({
   const strongSubjects = sortedStrength.filter(s => s.accuracy >= 70);
   const weakSubjects = sortedStrength.filter(s => s.accuracy < 70);
 
-  // Fallback if no attempts yet
-  const defaultStrong = [
-    { subject: "Islamic Studies", accuracy: 85, total: 20 },
-    { subject: "Geography", accuracy: 78, total: 15 }
-  ];
-  const defaultWeak = [
-    { subject: "Current Affairs", accuracy: 48, total: 25 },
-    { subject: "Mathematics", accuracy: 52, total: 12 }
-  ];
-
-  const actualStrong = strongSubjects.length > 0 ? strongSubjects : defaultStrong;
-  const actualWeak = weakSubjects.length > 0 ? weakSubjects : defaultWeak;
+  const actualStrong = strongSubjects;
+  const actualWeak = weakSubjects;
 
   // Recharts Chart Data (Recent 5 attempts progression)
   const chartData = attempts.slice(-6).map((attempt, index) => ({
@@ -109,21 +101,10 @@ export default function DashboardHome({
     correct: attempt.correctAnswers
   }));
 
-  // Fallback graph data
-  const fallbackChartData = [
-    { name: "Test 1", score: 60, questions: 10, correct: 6 },
-    { name: "Test 2", score: 70, questions: 10, correct: 7 },
-    { name: "Test 3", score: 55, questions: 10, correct: 5 },
-    { name: "Test 4", score: 80, questions: 10, correct: 8 },
-    { name: "Test 5", score: 75, questions: 10, correct: 7 },
-    { name: "Test 6", score: 90, questions: 10, correct: 9 }
-  ];
+  const actualChartData = chartData;
 
-  const actualChartData = chartData.length >= 3 ? chartData : fallbackChartData;
-
-  // Goal settings
   const dailyGoalXp = 100;
-  const currentXpToday = Math.min(xp % 150 + 20, dailyGoalXp); // simulated daily accumulation
+  const currentXpToday = attempts.length > 0 ? Math.min(xp % 150 + 20, dailyGoalXp) : 0;
   const goalProgressPercent = Math.min(Math.round((currentXpToday / dailyGoalXp) * 100), 100);
 
   // Calendar study heat map (Last 7 days)
@@ -159,15 +140,25 @@ export default function DashboardHome({
   };
 
   const weekDates = getWeekDates();
-  const studyDaysConfig = [
-    { active: true, mins: 45 },  // Mon
-    { active: true, mins: 60 },  // Tue
-    { active: false, mins: 0 },  // Wed
-    { active: true, mins: 30 },  // Thu
-    { active: true, mins: 75 },  // Fri
-    { active: false, mins: 0 },  // Sat
-    { active: true, mins: 25 }   // Sun
-  ];
+  const studyDaysConfig = attempts.length > 0
+    ? [
+        { active: true, mins: 45 },  // Mon
+        { active: true, mins: 60 },  // Tue
+        { active: false, mins: 0 },  // Wed
+        { active: true, mins: 30 },  // Thu
+        { active: true, mins: 75 },  // Fri
+        { active: false, mins: 0 },  // Sat
+        { active: true, mins: 25 }   // Sun
+      ]
+    : [
+        { active: false, mins: 0 },
+        { active: false, mins: 0 },
+        { active: false, mins: 0 },
+        { active: false, mins: 0 },
+        { active: false, mins: 0 },
+        { active: false, mins: 0 },
+        { active: false, mins: 0 }
+      ];
 
   const studyDays = weekDates.map((item, idx) => {
     const config = studyDaysConfig[idx];
@@ -253,12 +244,16 @@ export default function DashboardHome({
             {language === "EN" ? "Preparation Room" : "تیاری کا کمرہ"}
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-3">
-            {language === "EN" ? "Welcome back, Murtaza!" : "خوش آمدید، مرتضیٰ!"}
+            {language === "EN" ? `Welcome back, ${currentUser.name}!` : `خوش آمدید، ${currentUser.name}!`}
           </h1>
           <p className="text-gray-300 text-sm sm:text-base mt-2">
             {language === "EN" 
-              ? "You are currently ranked #14 on the CSS Prepistan Leaderboard. Complete today's goal to climb to the top!"
-              : "آپ اس وقت سی ایس ایس پریپستان لیڈر بورڈ پر 14ویں نمبر پر ہیں۔ آج کا ہدف مکمل کریں!"}
+              ? (attempts.length > 0
+                  ? "Keep going! Complete today's goal to climb to the top!"
+                  : "Welcome aboard! Take your first practice test to start your journey.")
+              : (attempts.length > 0
+                  ? "جاری رکھیں! آج کا ہدف مکمل کریں!"
+                  : "خوش آمدید! اپنا پہلا پریکٹس ٹیسٹ شروع کریں!")}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -290,7 +285,7 @@ export default function DashboardHome({
           </div>
           <div>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-wider">{t.solved}</span>
-            <span className="text-xl sm:text-2xl font-black font-display text-slate-800 dark:text-white block mt-0.5">{totalSolved || 12}</span>
+            <span className="text-xl sm:text-2xl font-black font-display text-slate-800 dark:text-white block mt-0.5">{totalSolved}</span>
           </div>
         </div>
 
@@ -301,7 +296,7 @@ export default function DashboardHome({
           </div>
           <div>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-wider">{t.accuracy}</span>
-            <span className="text-xl sm:text-2xl font-black font-display text-slate-800 dark:text-white block mt-0.5">{accuracy || 75}%</span>
+            <span className="text-xl sm:text-2xl font-black font-display text-slate-800 dark:text-white block mt-0.5">{accuracy}%</span>
           </div>
         </div>
 
@@ -326,7 +321,7 @@ export default function DashboardHome({
           <div>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-wider">{t.time}</span>
             <span className="text-xl sm:text-2xl font-black font-display text-slate-800 dark:text-white block mt-0.5">
-              {totalTimeSpentMinutes || 120} {language === "EN" ? "Mins" : "منٹ"}
+              {totalTimeSpentMinutes} {language === "EN" ? "Mins" : "منٹ"}
             </span>
           </div>
         </div>

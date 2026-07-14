@@ -48,15 +48,9 @@ interface AdminPanelProps {
   onUpdateAIConfig?: (config: AITutorApiConfig) => void;
   adsenseConfig?: AdSenseConfig;
   onUpdateAdSenseConfig?: (config: AdSenseConfig) => void;
-}
-
-interface MockUser {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  status: "Active" | "Suspended";
-  xp: number;
+  realUsers?: { _id: string; name: string; email: string; role: string; xp: number; isPremium: boolean }[];
+  onRoleChange?: (userId: string, newRole: string) => void;
+  onDeleteUser?: (userId: string) => void;
 }
 
 export default function AdminPanel({
@@ -80,7 +74,10 @@ export default function AdminPanel({
   aiConfig,
   onUpdateAIConfig,
   adsenseConfig,
-  onUpdateAdSenseConfig
+  onUpdateAdSenseConfig,
+  realUsers,
+  onRoleChange,
+  onDeleteUser
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<"analytics" | "users" | "mcqs" | "csv" | "financials" | "academy" | "payments" | "ai" | "adsense">("analytics");
 
@@ -100,15 +97,6 @@ export default function AdminPanel({
       setLocalEnableAds(adsenseConfig.enableAds);
     }
   }, [adsenseConfig]);
-
-  // Mock Users State
-  const [users, setUsers] = useState<MockUser[]>([
-    { id: "u1", name: "Fatima Jamil", email: "fatima@css.gov.pk", role: "Student", status: "Active", xp: 1450 },
-    { id: "u2", name: "Zia-ur-Rehman", email: "zia@ppsctest.pk", role: "Premium Student", status: "Active", xp: 5800 },
-    { id: "u3", name: "Hamza Abbasi", email: "hamza@nab.gov.pk", role: "Content Manager", status: "Active", xp: 2200 },
-    { id: "u4", name: "Murtaza Syed", email: "murtazasyedsui@gmail.com", role: "Super Admin", status: "Active", xp: 1420 },
-    { id: "u5", name: "Kamran Akmal", email: "kamran@cricket.pk", role: "Student", status: "Suspended", xp: 150 }
-  ]);
 
   // Mock Payments State
   const [payments] = useState([
@@ -215,15 +203,6 @@ export default function AdminPanel({
   const [newLectureDuration, setNewLectureDuration] = useState("");
   const [newLectureVideoUrl, setNewLectureVideoUrl] = useState("dQw4w9WgXcQ");
   const [newLecturePreview, setNewLecturePreview] = useState(false);
-
-  // User Manager handlers
-  const handleUpdateRole = (id: string, role: UserRole) => {
-    setUsers(users.map(u => u.id === id ? { ...u, role } : u));
-  };
-
-  const handleToggleStatus = (id: string) => {
-    setUsers(users.map(u => u.id === id ? { ...u, status: u.status === "Active" ? "Suspended" : "Active" } : u));
-  };
 
   // Syllabus Question insertion handler
   const handleCreateMCQ = () => {
@@ -674,7 +653,7 @@ export default function AdminPanel({
       {activeTab === "users" && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Competitor Identity & Roles</h3>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">User Management ({realUsers?.length || 0} users)</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -683,51 +662,55 @@ export default function AdminPanel({
                   <th className="p-4 font-semibold">User</th>
                   <th className="p-4 font-semibold">Email</th>
                   <th className="p-4 font-semibold">Assigned Role</th>
-                  <th className="p-4 font-semibold">Activity XP</th>
-                  <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold">XP</th>
+                  <th className="p-4 font-semibold">Premium</th>
                   <th className="p-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {users.map(u => (
-                  <tr key={u.id} className="text-gray-700 dark:text-gray-300 hover:bg-gray-50/50">
-                    <td className="p-4 font-bold text-gray-900 dark:text-white">{u.name}</td>
-                    <td className="p-4 font-mono">{u.email}</td>
-                    <td className="p-4">
-                      <select
-                        value={u.role}
-                        onChange={(e) => handleUpdateRole(u.id, e.target.value as UserRole)}
-                        className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-medium"
-                      >
-                        <option value="Student">Student</option>
-                        <option value="Premium Student">Premium Student</option>
-                        <option value="Content Manager">Content Manager</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Super Admin">Super Admin</option>
-                      </select>
-                    </td>
-                    <td className="p-4 font-mono font-semibold text-emerald-600">{u.xp} XP</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        u.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                      }`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => handleToggleStatus(u.id)}
-                        className={`text-xs font-bold px-3 py-1 rounded-lg ${
-                          u.status === "Active" 
-                            ? "bg-rose-50 text-rose-600 hover:bg-rose-100" 
-                            : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        }`}
-                      >
-                        {u.status === "Active" ? "Suspend" : "Activate"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {!realUsers || realUsers.length === 0 ? (
+                  <tr><td colSpan={6} className="p-8 text-center text-gray-400">No users found</td></tr>
+                ) : (
+                  realUsers.map(u => (
+                    <tr key={u._id} className="text-gray-700 dark:text-gray-300 hover:bg-gray-50/50">
+                      <td className="p-4 font-bold text-gray-900 dark:text-white">{u.name}</td>
+                      <td className="p-4 font-mono">{u.email}</td>
+                      <td className="p-4">
+                        <select
+                          value={u.role}
+                          onChange={(e) => onRoleChange?.(u._id, e.target.value)}
+                          className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-medium"
+                        >
+                          <option value="Student">Student</option>
+                          <option value="Premium Student">Premium Student</option>
+                          <option value="Content Manager">Content Manager</option>
+                          <option value="Admin">Admin</option>
+                          <option value="Super Admin">Super Admin</option>
+                        </select>
+                      </td>
+                      <td className="p-4 font-mono font-semibold text-emerald-600">{u.xp} XP</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          u.isPremium ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500"
+                        }`}>
+                          {u.isPremium ? "Premium" : "Free"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete ${u.name}?`)) {
+                              onDeleteUser?.(u._id);
+                            }
+                          }}
+                          className="text-xs font-bold px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -102,6 +102,7 @@ interface AppContextType {
   setUserCoins: React.Dispatch<React.SetStateAction<number>>;
   userStreak: number;
   longestStreak: number;
+  sessionLoading: boolean;
   quizConfig: { category: string; subject: string; mode: "Practice Mode" | "Timed Test" | "Mock Test"; questions: MCQ[] } | null;
   toasts: AppToast[];
   showToast: (message: string, type?: AppToast["type"]) => void;
@@ -143,6 +144,7 @@ export function useApp() {
 
 export function AppProvider({ children, initialTab = "dashboard" }: { children: ReactNode; initialTab?: string }) {
   const [toasts, setToasts] = useState<AppToast[]>([]);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   const showToast = (message: string, type: AppToast["type"] = "success") => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -200,7 +202,12 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         })
         .catch(() => {
           localStorage.removeItem("prepistan_token");
+        })
+        .finally(() => {
+          setSessionLoading(false);
         });
+    } else {
+      setSessionLoading(false);
     }
   }, []);
 
@@ -703,7 +710,7 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         pricingOpen, setPricingOpen, mcqs, bookmarkedIds, quizHistory, articles,
         notifications, discussions, courses, courseCategories, mcqCategories, mcqSubjects,
         uniqueCategories, paymentConfig, adsenseConfig, aiConfig, setAiConfig,
-        userXp, userCoins, setUserCoins, userStreak, longestStreak, quizConfig,
+        userXp, userCoins, setUserCoins, userStreak, longestStreak, sessionLoading, quizConfig,
         toasts, showToast,
         handleLogout, handleNavigate, handleStartQuiz, handleNavigateToQuiz,
         handleFinishQuiz, handleToggleBookmark, handlePostDiscussion,

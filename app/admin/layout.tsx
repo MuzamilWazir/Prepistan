@@ -6,15 +6,24 @@ import { AppProvider, useApp } from "../../components/AppContext";
 
 function AdminGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { currentUser, currentRole } = useApp();
+  const { currentUser, currentRole, sessionLoading } = useApp();
 
   useEffect(() => {
+    if (sessionLoading) return;
     if (!currentUser.isLoggedIn) {
       router.replace("/admin/login");
     } else if (currentRole !== "Admin" && currentRole !== "Super Admin") {
       router.replace("/dashboard");
     }
-  }, [currentUser.isLoggedIn, currentRole, router]);
+  }, [currentUser.isLoggedIn, currentRole, sessionLoading, router]);
+
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="animate-pulse text-sm text-slate-400 font-semibold">Loading session...</div>
+      </div>
+    );
+  }
 
   if (!currentUser.isLoggedIn || (currentRole !== "Admin" && currentRole !== "Super Admin")) {
     return (

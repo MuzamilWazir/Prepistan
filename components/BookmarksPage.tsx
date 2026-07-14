@@ -1,4 +1,4 @@
- ort { Bookmark, Trash2, HelpCircle, ArrowRight, Play, ExternalLink } from "lucide-react";
+import { Bookmark, Trash2, HelpCircle, ArrowRight, Play, ExternalLink } from "lucide-react";
 import { MCQ } from "../types";
 
 interface BookmarksPageProps {

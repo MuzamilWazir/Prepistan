@@ -1,4 +1,5 @@
- 
+ export type UserRole = "Student" | "Premium Student" | "Admin" | "Super Admin" | "Content Manager";
+
 export interface UserProfile {
   id: string;
   name: string;

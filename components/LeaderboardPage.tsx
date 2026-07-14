@@ -1,5 +1,5 @@
- ort { 
-  Trophy, 
+import { 
+  Trophy,
   Crown, 
   Award, 
   Flame, 

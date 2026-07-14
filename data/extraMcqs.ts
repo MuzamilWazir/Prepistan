@@ -1,10 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { MCQ } from "../types";
-
+ 
 export const extraMCQs: MCQ[] = [
   {
     id: "extra-pa-01",

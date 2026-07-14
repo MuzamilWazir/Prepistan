@@ -1,10 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React from "react";
-import { Bookmark, Trash2, HelpCircle, ArrowRight, Play, ExternalLink } from "lucide-react";
+ ort { Bookmark, Trash2, HelpCircle, ArrowRight, Play, ExternalLink } from "lucide-react";
 import { MCQ } from "../types";
 
 interface BookmarksPageProps {

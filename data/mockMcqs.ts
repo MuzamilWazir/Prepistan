@@ -1,4 +1,5 @@
- 
+import type { MCQ } from "../types";
+
 export const initialMCQs: MCQ[] = [
   {
     id: "css-pa-01",

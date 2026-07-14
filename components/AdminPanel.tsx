@@ -24,7 +24,7 @@ import {
   Settings,
   Eye
 } from "lucide-react";
-import { MCQ, UserRole, Course, VideoLecture, PaymentConfig, Coupon, AITutorApiConfig, AdSenseConfig } from "../types";
+import { MCQ, UserRole, Course, VideoLecture, PaymentConfig, Coupon, AITutorApiConfig, AdSenseConfig } from "../app/types";
 
 interface AdminPanelProps {
   mcqs: MCQ[];

@@ -1,3 +1,5 @@
+"use client";
+
 import { 
   X, 
   Check, 
@@ -14,6 +16,7 @@ import {
   FileText
 } from "lucide-react";
 import { PaymentConfig } from "../types";
+import { useState } from "react";
 
 interface PricingModalProps {
   isOpen: boolean;

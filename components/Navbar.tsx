@@ -1,3 +1,5 @@
+
+"use client";
 import { 
   BookOpen, 
   Sparkles, 
@@ -23,7 +25,8 @@ import {
   BookOpenCheck,
   Video
 } from "lucide-react";
-import { UserRole, SystemNotification } from "../types";
+import { UserRole, SystemNotification } from "../app/types";
+import {useState} from "react";
 
 interface NavbarProps {
   currentRole: UserRole;

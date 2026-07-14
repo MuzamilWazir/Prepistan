@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Navbar from "./Navbar";
 import DashboardHome from "./DashboardHome";
 import ExamCategories from "./ExamCategories";
@@ -89,7 +90,14 @@ const defaultAIConfig: AITutorApiConfig = {
   },
 };
 
-export default function App() {
+interface AppProps {
+  initialTab?: string;
+}
+
+export default function App({ initialTab = "dashboard" }: AppProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("prepistan_user") : null;
     return saved
@@ -122,8 +130,17 @@ export default function App() {
   const [currentRole, setRole] = useState<UserRole>("Student");
   const [isPremium, setPremium] = useState(false);
   const [language, setLanguage] = useState<"EN" | "UR">("EN");
-  const [darkMode, setDarkMode] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+
+    const saved = window.localStorage.getItem("prepistan_dark_mode");
+    if (saved) {
+      return saved === "dark";
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [aiConfig, setAiConfig] = useState<AITutorApiConfig>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("prepistan_ai_config") : null;
@@ -417,17 +434,38 @@ export default function App() {
   } | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const root = window.document.documentElement;
-    if (darkMode) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    const body = window.document.body;
+
+    root.classList.toggle("dark", darkMode);
+    body.classList.toggle("dark", darkMode);
+    root.style.colorScheme = darkMode ? "dark" : "light";
+    window.localStorage.setItem("prepistan_dark_mode", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  const routeMap: Record<string, string> = {
+    dashboard: "/dashboard",
+    exams: "/exams",
+    quiz: "/quiz",
+    courses: "/courses",
+    "ai-portal": "/ai-portal",
+    leaderboard: "/leaderboard",
+    notes: "/notes",
+    bookmarks: "/bookmarks",
+    blog: "/blog",
+    admin: "/admin",
+  };
 
   const handleNavigate = (page: string) => {
     setActiveTab(page);
     setQuizConfig(null);
+
+    const targetRoute = routeMap[page] ?? "/dashboard";
+    if (typeof window !== "undefined" && window.location.pathname !== targetRoute) {
+      window.history.pushState({}, "", targetRoute);
+    }
   };
 
   const handleStartQuiz = (category: string, subject: string, mode: any, questionCount: number = 20) => {

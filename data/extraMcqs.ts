@@ -1,4 +1,5 @@
- 
+import type { MCQ } from "../types";
+
 export const extraMCQs: MCQ[] = [
   {
     id: "extra-pa-01",

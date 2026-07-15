@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "./AppContext";
 import Navbar from "./Navbar";
 import DashboardHome from "./DashboardHome";
@@ -8,7 +9,6 @@ import ExamCategories from "./ExamCategories";
 import QuizInterface from "./QuizInterface";
 import AIPortal from "./AIPortal";
 import LeaderboardPage from "./LeaderboardPage";
-import AdminPanel from "./AdminPanel";
 import BlogCMS from "./BlogCMS";
 import NotesPage from "./NotesPage";
 import BookmarksPage from "./BookmarksPage";
@@ -16,6 +16,7 @@ import PricingModal from "./PricingModal";
 import CoursesPage from "./CoursesPage";
 
 export default function AppShell() {
+  const router = useRouter();
   const {
     currentRole, setRole, isPremium, setPremium, language, setLanguage,
     darkMode, setDarkMode, activeTab, pricingOpen, setPricingOpen,
@@ -32,6 +33,22 @@ export default function AppShell() {
     handleAddMcqCategory, handleAddMcqSubject,
     handleDeleteMcqCategory, handleDeleteMcqSubject,
   } = useApp();
+
+  const isAdmin = currentRole === "Admin" || currentRole === "Super Admin";
+
+  useEffect(() => {
+    if (isAdmin) {
+      window.location.href = "/admin/dashboard";
+    }
+  }, [isAdmin]);
+
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0F172A]">
+        <div className="animate-pulse text-sm text-slate-400 font-semibold">Redirecting to admin panel...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-slate-200 transition-colors duration-200">
@@ -115,7 +132,7 @@ export default function AppShell() {
               onAddCustomMCQ={handleAddMCQ}
               language={language}
               isPremium={isPremium}
-              isAdmin={currentRole === "Super Admin" || currentRole === "Admin"}
+              isAdmin={isAdmin}
               onOpenPricing={() => setPricingOpen(true)}
               onNavigateToQuiz={handleNavigateToQuiz}
               aiConfig={aiConfig}
@@ -136,31 +153,7 @@ export default function AppShell() {
             <BlogCMS articles={articles} onAddArticle={handleAddArticle} onUpdateArticle={handleUpdateArticle} onDeleteArticle={handleDeleteArticle} currentRole={currentRole} language={language} adsenseConfig={adsenseConfig} />
           )}
 
-          {activeTab === "admin" && (
-            <AdminPanel
-              mcqs={mcqs}
-              onAddMCQ={handleAddMCQ}
-              onDeleteMCQ={handleDeleteMCQ}
-              language={language}
-              courses={courses}
-              onAddCourse={handleAddCourse}
-              onDeleteCourse={handleDeleteCourse}
-              courseCategories={courseCategories}
-              onAddCourseCategory={handleAddCourseCategory}
-              paymentConfig={paymentConfig}
-              onUpdatePaymentConfig={handleUpdatePaymentConfig}
-              mcqCategories={mcqCategories}
-              onAddMcqCategory={handleAddMcqCategory}
-              onDeleteMcqCategory={handleDeleteMcqCategory}
-              mcqSubjects={mcqSubjects}
-              onAddMcqSubject={handleAddMcqSubject}
-              onDeleteMcqSubject={handleDeleteMcqSubject}
-              aiConfig={aiConfig}
-              onUpdateAIConfig={setAiConfig}
-              adsenseConfig={adsenseConfig}
-              onUpdateAdSenseConfig={handleUpdateAdSenseConfig}
-            />
-          )}
+
         </main>
 
         <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-6 transition-colors">

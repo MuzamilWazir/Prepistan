@@ -171,10 +171,10 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         };
   });
 
-  // Restore session from token on mount
+  // Restore session from token on mount — always fetch to get role
   useEffect(() => {
     const token = localStorage.getItem("prepistan_token");
-    if (token && !currentUser.isLoggedIn) {
+    if (token) {
       apiGetCurrentUser(token)
         .then(({ user }) => {
           setCurrentUser({ name: user.name, email: user.email, isLoggedIn: true, provider: user.provider });
@@ -185,7 +185,6 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
           setUserStreak(user.streak);
           setLongestStreak(user.longestStreak);
           setBookmarkedIds(user.bookmarkedIds || []);
-          // Fetch quiz history from backend
           apiGetQuizHistory(token).then(({ attempts }) => {
             setQuizHistory(attempts.map(a => ({
               id: a._id,
@@ -202,6 +201,7 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         })
         .catch(() => {
           localStorage.removeItem("prepistan_token");
+          localStorage.removeItem("prepistan_user");
         })
         .finally(() => {
           setSessionLoading(false);

@@ -37,8 +37,17 @@ function AdminGate({ children }: { children: React.ReactNode }) {
 }
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === "/admin/login";
+  const { handleLogout } = useApp();
+
+  const handleAdminLogout = () => {
+    handleLogout();
+    localStorage.removeItem("prepistan_token");
+    localStorage.removeItem("prepistan_user");
+    router.replace("/admin/login");
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
@@ -56,9 +65,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                     <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Prepistan Control Room</span>
                   </div>
                 </div>
-                <a href="/dashboard" className="text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-                  ← Back to App
-                </a>
+                <div className="flex items-center gap-4">
+                  <a href="/dashboard" className="text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                    ← Back to App
+                  </a>
+                  <button onClick={handleAdminLogout} className="text-xs font-semibold text-rose-400 hover:text-rose-300 transition-colors">
+                    Logout
+                  </button>
+                </div>
               </div>
             </header>
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">

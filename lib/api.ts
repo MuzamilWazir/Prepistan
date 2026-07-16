@@ -208,3 +208,37 @@ export async function apiGetQuizHistory(token: string) {
 export async function apiGetLeaderboard() {
   return request<{ leaderboard: AuthUser[] }>("/quiz/leaderboard");
 }
+
+// ── Google OAuth ──
+
+export function getGoogleAuthUrl(): string {
+  return `${API_BASE}/users/auth/google`;
+}
+
+export function extractOAuthParams(): { token?: string; refresh?: string; user?: string; error?: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  const refresh = params.get("refresh");
+  const user = params.get("user");
+  const error = params.get("error");
+
+  if (!token && !error) return null;
+
+  return {
+    token: token || undefined,
+    refresh: refresh || undefined,
+    user: user || undefined,
+    error: error || undefined,
+  };
+}
+
+export function clearOAuthParams() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("token");
+  url.searchParams.delete("refresh");
+  url.searchParams.delete("user");
+  url.searchParams.delete("error");
+  window.history.replaceState({}, "", url.toString());
+}

@@ -22,7 +22,9 @@ import {
   Sparkles,
   Cpu,
   Settings,
-  Eye
+  Eye,
+  Search,
+  Filter
 } from "lucide-react";
 import { MCQ, UserRole, Course, VideoLecture, PaymentConfig, Coupon, AITutorApiConfig, AdSenseConfig } from "../app/types";
 
@@ -51,6 +53,10 @@ interface AdminPanelProps {
   realUsers?: { _id: string; name: string; email: string; role: string; xp: number; isPremium: boolean }[];
   onRoleChange?: (userId: string, newRole: string) => void;
   onDeleteUser?: (userId: string) => void;
+  userSearch?: string;
+  onUserSearchChange?: (val: string) => void;
+  userRoleFilter?: string;
+  onUserRoleFilterChange?: (val: string) => void;
 }
 
 export default function AdminPanel({
@@ -77,7 +83,11 @@ export default function AdminPanel({
   onUpdateAdSenseConfig,
   realUsers,
   onRoleChange,
-  onDeleteUser
+  onDeleteUser,
+  userSearch,
+  onUserSearchChange,
+  userRoleFilter,
+  onUserRoleFilterChange,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<"analytics" | "users" | "mcqs" | "csv" | "financials" | "academy" | "payments" | "ai" | "adsense">("analytics");
 
@@ -652,8 +662,37 @@ export default function AdminPanel({
       {/* Tab 2: User Operations */}
       {activeTab === "users" && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">User Management ({realUsers?.length || 0} users)</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">User Management ({realUsers?.length || 0} users)</h3>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={userSearch || ""}
+                  onChange={(e) => onUserSearchChange?.(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                />
+              </div>
+              <div className="relative">
+                <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <select
+                  value={userRoleFilter || ""}
+                  onChange={(e) => onUserRoleFilterChange?.(e.target.value)}
+                  className="pl-8 pr-6 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer"
+                >
+                  <option value="">All Roles (excl. admins)</option>
+                  <option value="Student">Student</option>
+                  <option value="Premium Student">Premium Student</option>
+                  <option value="Content Manager">Content Manager</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -671,15 +710,25 @@ export default function AdminPanel({
                 {!realUsers || realUsers.length === 0 ? (
                   <tr><td colSpan={6} className="p-8 text-center text-gray-400">No users found</td></tr>
                 ) : (
-                  realUsers.map(u => (
+                  realUsers.map(u => {
+                    const isAdmin = u.role === "Admin" || u.role === "Super Admin";
+                    return (
                     <tr key={u._id} className="text-gray-700 dark:text-gray-300 hover:bg-gray-50/50">
-                      <td className="p-4 font-bold text-gray-900 dark:text-white">{u.name}</td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900 dark:text-white">{u.name}</span>
+                          {isAdmin && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">ADMIN</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4 font-mono">{u.email}</td>
                       <td className="p-4">
                         <select
                           value={u.role}
                           onChange={(e) => onRoleChange?.(u._id, e.target.value)}
-                          className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-medium"
+                          disabled={isAdmin}
+                          className={`px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 font-medium text-xs ${isAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           <option value="Student">Student</option>
                           <option value="Premium Student">Premium Student</option>
@@ -697,19 +746,20 @@ export default function AdminPanel({
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete ${u.name}?`)) {
-                              onDeleteUser?.(u._id);
-                            }
-                          }}
-                          className="text-xs font-bold px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors"
-                        >
-                          Delete
-                        </button>
+                        {isAdmin ? (
+                          <span className="text-[10px] text-gray-400 font-medium">Protected</span>
+                        ) : (
+                          <button
+                            onClick={() => onDeleteUser?.(u._id)}
+                            className="text-xs font-bold px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

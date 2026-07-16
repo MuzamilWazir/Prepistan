@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "../../../components/AppContext";
 import AdminPanel from "../../../components/AdminPanel";
 import { apiAdminGetUsers, apiAdminUpdateUserRole, apiAdminDeleteUser, type AuthUser } from "../../../lib/api";
@@ -18,21 +18,33 @@ export default function AdminDashboardPage() {
   } = useApp();
 
   const [users, setUsers] = useState<AuthUser[]>([]);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (searchVal?: string, roleVal?: string) => {
     const token = localStorage.getItem("prepistan_token");
     if (!token) return;
     try {
-      const res = await apiAdminGetUsers(token, { page: 1, limit: 100 });
+      const res = await apiAdminGetUsers(token, {
+        page: 1,
+        limit: 200,
+        search: searchVal ?? search,
+        role: roleVal ?? roleFilter,
+      });
       setUsers(res.users);
     } catch (err) {
       console.error("Failed to fetch users:", err);
     }
-  };
+  }, [search, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchUsers(search, roleFilter), 300);
+    return () => clearTimeout(timer);
+  }, [search, roleFilter, fetchUsers]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     const token = localStorage.getItem("prepistan_token");
@@ -46,7 +58,8 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    const user = users.find(u => u._id === userId);
+    if (!confirm(`Are you sure you want to delete ${user?.name || "this user"}?`)) return;
     const token = localStorage.getItem("prepistan_token");
     if (!token) return;
     try {
@@ -90,6 +103,10 @@ export default function AdminDashboardPage() {
         realUsers={users}
         onRoleChange={handleRoleChange}
         onDeleteUser={handleDeleteUser}
+        userSearch={search}
+        onUserSearchChange={setSearch}
+        userRoleFilter={roleFilter}
+        onUserRoleFilterChange={setRoleFilter}
       />
     </div>
   );

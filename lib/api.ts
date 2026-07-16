@@ -78,12 +78,13 @@ export async function apiLogout() {
 
 export async function apiAdminGetUsers(
   token: string,
-  params?: { page?: number; limit?: number; search?: string }
+  params?: { page?: number; limit?: number; search?: string; role?: string }
 ) {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
+  if (params?.role) query.set("role", params.role);
 
   return request<{
     users: AuthUser[];

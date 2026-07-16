@@ -18,8 +18,6 @@ import { initialMCQs } from "../data/mockMcqs";
 import { extraMCQs } from "../data/extraMcqs";
 import { initialCourses, initialCategories } from "./CoursesPage";
 import {
-  apiRegister,
-  apiLogin,
   apiGetCurrentUser,
   apiLogout,
   apiGetQuizHistory,
@@ -128,10 +126,6 @@ interface AppContextType {
   handleAddMcqSubject: (newSub: string) => void;
   handleDeleteMcqCategory: (catToDelete: string) => void;
   handleDeleteMcqSubject: (subToDelete: string) => void;
-  handleSocialSubmit: (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => Promise<void>;
-  handleTraditionalRegister: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
-  handleTraditionalLogin: (email: string, password: string) => Promise<void>;
-  handleDemoBypass: (role: UserRole) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -591,117 +585,6 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
 
   const uniqueCategories = Array.from(new Set(mcqs.flatMap((q) => q.category.split(",").map((c) => c.trim())))) as string[];
 
-  const handleSocialSubmit = async (name: string, email: string, socialProvider: "Google" | "Gmail" | null, role: UserRole) => {
-    if (!name.trim() || !email.trim()) {
-      showToast("Please fill in your name and email.", "error");
-      return;
-    }
-    const userPayload = { name, email, isLoggedIn: true, provider: socialProvider || "Google" };
-    const rolePayload = role || "Student";
-    const isPremiumPayload = role === "Premium Student" || role === "Super Admin";
-    try {
-      const res = await apiRegister({ name, email, password: "social-auth-placeholder" });
-      const loginRes = await apiLogin({ email, password: "social-auth-placeholder" });
-      localStorage.setItem("prepistan_token", loginRes.accessToken);
-      localStorage.setItem("prepistan_user", JSON.stringify({ ...userPayload, name: res.user.name, email: res.user.email }));
-      setAccessToken(loginRes.accessToken);
-      setCurrentUser({ name: res.user.name, email: res.user.email, isLoggedIn: true, provider: socialProvider || "Google" });
-      setRole(res.user.role as UserRole);
-      setPremium(res.user.isPremium);
-      setUserXp(res.user.xp);
-      setUserCoins(res.user.coins);
-      setUserStreak(res.user.streak);
-      setLongestStreak(res.user.longestStreak);
-    } catch {
-      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
-      setCurrentUser(userPayload);
-      setRole(rolePayload as UserRole);
-      setPremium(isPremiumPayload);
-    }
-    setNotifications((prev) => [
-      { id: `welcome-${Date.now()}`, title: `Welcome, ${name}!`, message: `You have successfully registered to Prepistan via ${socialProvider}!`, type: "success", date: "Today", read: false },
-      ...prev,
-    ]);
-  };
-
-  const handleTraditionalRegister = async (name: string, email: string, password: string, role: UserRole) => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      showToast("Please fill in all details.", "error");
-      return;
-    }
-    try {
-      const res = await apiRegister({ name, email, password });
-      const loginRes = await apiLogin({ email, password });
-      const userPayload = { name: res.user.name, email: res.user.email, isLoggedIn: true, provider: "Email" };
-      localStorage.setItem("prepistan_token", loginRes.accessToken);
-      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
-      setAccessToken(loginRes.accessToken);
-      setCurrentUser(userPayload);
-      setRole(res.user.role as UserRole);
-      setPremium(res.user.isPremium);
-      setUserXp(res.user.xp);
-      setUserCoins(res.user.coins);
-      setUserStreak(res.user.streak);
-      setLongestStreak(res.user.longestStreak);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Registration failed";
-      showToast(msg, "error");
-      return;
-    }
-    showToast(`Welcome to Prepistan, ${name}!`, "success");
-    setNotifications((prev) => [
-      { id: `welcome-${Date.now()}`, title: "Account Registered Successfully!", message: `Welcome to Prepistan, ${name}!`, type: "success", date: "Today", read: false },
-      ...prev,
-    ]);
-  };
-
-  const handleTraditionalLogin = async (email: string, password: string) => {
-    if (!email.trim() || !password.trim()) {
-      showToast("Please fill in both email and password.", "error");
-      return;
-    }
-    try {
-      const res = await apiLogin({ email, password });
-      const userPayload = { name: res.user.name, email: res.user.email, isLoggedIn: true, provider: "Email" };
-      localStorage.setItem("prepistan_token", res.accessToken);
-      localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
-      setAccessToken(res.accessToken);
-      setCurrentUser(userPayload);
-      setRole(res.user.role as UserRole);
-      setPremium(res.user.isPremium);
-      setUserXp(res.user.xp);
-      setUserCoins(res.user.coins);
-      setUserStreak(res.user.streak);
-      setLongestStreak(res.user.longestStreak);
-      setBookmarkedIds(res.user.bookmarkedIds || []);
-      // Fetch quiz history from backend
-      apiGetQuizHistory(res.accessToken).then(({ attempts }) => {
-        setQuizHistory(attempts.map(a => ({
-          id: a._id,
-          quizMode: a.quizMode as QuizMode,
-          category: a.category,
-          subject: a.subject,
-          totalQuestions: a.totalQuestions,
-          correctAnswers: a.correctAnswers,
-          wrongAnswers: a.wrongAnswers,
-          timeSpentSeconds: a.timeSpentSeconds,
-          date: a.date,
-        })));
-      }).catch(() => {});
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Login failed";
-      showToast(msg, "error");
-    }
-  };
-
-  const handleDemoBypass = (role: UserRole) => {
-    const userPayload = { name: "Murtaza Syed", email: "murtaza@prepistan.pk", isLoggedIn: true, provider: "Simulation Bypass" };
-    localStorage.setItem("prepistan_user", JSON.stringify(userPayload));
-    setCurrentUser(userPayload);
-    setRole(role);
-    setPremium(role === "Premium Student" || role === "Super Admin");
-  };
-
   return (
     <AppContext.Provider
       value={{
@@ -720,7 +603,6 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
         handleUpdatePaymentConfig, handleUpdateAdSenseConfig,
         handleAddMcqCategory, handleAddMcqSubject,
         handleDeleteMcqCategory, handleDeleteMcqSubject,
-        handleSocialSubmit, handleTraditionalRegister, handleTraditionalLogin, handleDemoBypass,
       }}
     >
       {children}

@@ -90,7 +90,7 @@ const examSuites = [
 
 export default function PublicLandingPage() {
   const router = useRouter();
-  const { darkMode, setDarkMode, handleDemoBypass } = useApp();
+  const { darkMode, setDarkMode } = useApp();
 
   const [activeCategoryTab, setActiveCategoryTab] = useState<"all" | "civil" | "recruitment" | "admissions">("all");
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -420,19 +420,6 @@ export default function PublicLandingPage() {
                 </span>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Developer bypass section */}
-      <section className="py-8 bg-amber-500/5 border-y border-amber-500/10 px-4 text-center">
-        <div className="max-w-xl mx-auto">
-          <span className="text-[9px] uppercase font-mono tracking-wider text-amber-600 dark:text-amber-400 font-bold block mb-2">Developer Simulation &amp; Testing bypass</span>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3 leading-normal">For evaluation, you can bypass auth instantly to view the fully functional, data-filled study dashboard in different user roles:</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <button onClick={() => handleDemoBypass("Super Admin")} className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition-all border border-amber-500/15">Super Admin Control</button>
-            <button onClick={() => handleDemoBypass("Student")} className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-bold transition-all border border-emerald-500/15">Standard Student</button>
-            <button onClick={() => handleDemoBypass("Premium Student")} className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg text-[10px] font-bold transition-all border border-purple-500/15">Premium Student</button>
           </div>
         </div>
       </section>

@@ -140,35 +140,27 @@ export default function DashboardHome({
   };
 
   const weekDates = getWeekDates();
-  const studyDaysConfig = attempts.length > 0
-    ? [
-        { active: true, mins: 45 },  // Mon
-        { active: true, mins: 60 },  // Tue
-        { active: false, mins: 0 },  // Wed
-        { active: true, mins: 30 },  // Thu
-        { active: true, mins: 75 },  // Fri
-        { active: false, mins: 0 },  // Sat
-        { active: true, mins: 25 }   // Sun
-      ]
-    : [
-        { active: false, mins: 0 },
-        { active: false, mins: 0 },
-        { active: false, mins: 0 },
-        { active: false, mins: 0 },
-        { active: false, mins: 0 },
-        { active: false, mins: 0 },
-        { active: false, mins: 0 }
-      ];
+  const studyDaysConfig = weekDates.map((item) => {
+    const dayAttempts = attempts.filter((a) => {
+      const d = new Date(a.date);
+      return d.getDate() === item.dateNum &&
+        d.getMonth() === new Date().getMonth() &&
+        d.getFullYear() === new Date().getFullYear();
+    });
+    const totalSecs = dayAttempts.reduce((sum, a) => sum + (a.timeSpentSeconds || 0), 0);
+    return {
+      active: dayAttempts.length > 0,
+      mins: Math.round(totalSecs / 60),
+      count: dayAttempts.length,
+    };
+  });
 
   const studyDays = weekDates.map((item, idx) => {
     const config = studyDaysConfig[idx];
     let active = config.active;
     let mins = config.mins;
 
-    if (item.isToday) {
-      active = true;
-      mins = Math.max(15, Math.floor(currentXpToday / 2));
-    } else if (item.isFuture) {
+    if (item.isFuture) {
       active = false;
       mins = 0;
     }
@@ -176,7 +168,8 @@ export default function DashboardHome({
     return {
       ...item,
       active,
-      mins
+      mins,
+      count: config.count,
     };
   });
 
@@ -532,7 +525,7 @@ export default function DashboardHome({
                       {d.isToday && <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-extrabold ml-0.5">★</span>}
                     </span>
                     <div 
-                      title={`${d.isToday ? "Today: " : ""}${d.isFuture ? "Upcoming: " : ""}${d.mins > 0 ? `${d.mins} minutes studied` : "No study activity recorded"}`}
+                      title={`${d.isToday ? "Today: " : ""}${d.isFuture ? "Upcoming: " : ""}${d.count ? `${d.count} quiz${d.count > 1 ? "es" : ""} (${d.mins}m)` : "No quizzes taken"}`}
                       className={`w-full aspect-square rounded-xl flex flex-col items-center justify-between p-1.5 transition-all relative border ${cardClass}`}
                     >
                       {/* The Date Number */}

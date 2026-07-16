@@ -194,7 +194,14 @@ export async function apiSubmitQuizAttempt(
     timeSpentSeconds: number;
   }
 ) {
-  return request<{ attempt: QuizAttemptData; rewards: { xp: number; coins: number } }>(
+  return request<{
+    attempt: QuizAttemptData;
+    rewards: { xp: number; coins: number };
+    streak: number;
+    longestStreak: number;
+    userXp: number;
+    userCoins: number;
+  }>(
     "/quiz/submit",
     { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) }
   );
@@ -206,8 +213,16 @@ export async function apiGetQuizHistory(token: string) {
   });
 }
 
-export async function apiGetLeaderboard() {
-  return request<{ leaderboard: AuthUser[] }>("/quiz/leaderboard");
+export async function apiGetLeaderboard(period?: string) {
+  const query = period ? `?period=${encodeURIComponent(period)}` : "";
+  return request<{ leaderboard: AuthUser[] }>(`/quiz/leaderboard${query}`);
+}
+
+export async function apiGetUserRank(token: string, period?: string) {
+  const query = period ? `?period=${encodeURIComponent(period)}` : "";
+  return request<{ user: AuthUser; rank: number }>(`/quiz/leaderboard/me${query}`, {
+    headers: authHeaders(token),
+  });
 }
 
 // ── Google OAuth ──

@@ -140,7 +140,7 @@ export default function AppShell() {
           )}
 
           {activeTab === "leaderboard" && (
-            <LeaderboardPage userXp={userXp} userCoins={userCoins} userStreak={userStreak} language={language} />
+            <LeaderboardPage userXp={userXp} userCoins={userCoins} userStreak={userStreak} language={language} currentUser={currentUser} />
           )}
 
           {activeTab === "notes" && <NotesPage isPremium={isPremium} onOpenPricing={() => setPricingOpen(true)} language={language} />}

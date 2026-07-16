@@ -21,6 +21,7 @@ import {
   apiGetCurrentUser,
   apiLogout,
   apiGetQuizHistory,
+  apiSubmitQuizAttempt,
 } from "../lib/api";
 
 const defaultAIConfig: AITutorApiConfig = {
@@ -514,15 +515,42 @@ export function AppProvider({ children, initialTab = "dashboard" }: { children: 
   const handleFinishQuiz = (attempt: QuizAttempt, exitImmediately = true) => {
     if (!attemptRegistered || attemptRegistered !== attempt.id) {
       setQuizHistory((prev) => (prev.some((x) => x.id === attempt.id) ? prev : [...prev, attempt]));
+      setAttemptRegistered(attempt.id);
+
+      const token = localStorage.getItem("prepistan_token");
+      if (token) {
+        apiSubmitQuizAttempt(token, {
+          quizMode: attempt.quizMode,
+          category: attempt.category,
+          subject: attempt.subject,
+          totalQuestions: attempt.totalQuestions,
+          correctAnswers: attempt.correctAnswers,
+          wrongAnswers: attempt.wrongAnswers,
+          timeSpentSeconds: attempt.timeSpentSeconds,
+        }).then((res) => {
+          setUserXp(res.userXp);
+          setUserCoins(res.userCoins);
+          setUserStreak(res.streak);
+          setLongestStreak(res.longestStreak);
+        }).catch(() => {
+          const rewardXp = attempt.correctAnswers * 10;
+          const rewardCoins = attempt.correctAnswers * 2;
+          setUserXp((prev) => prev + rewardXp);
+          setUserCoins((prev) => prev + rewardCoins);
+        });
+      } else {
+        const rewardXp = attempt.correctAnswers * 10;
+        const rewardCoins = attempt.correctAnswers * 2;
+        setUserXp((prev) => prev + rewardXp);
+        setUserCoins((prev) => prev + rewardCoins);
+      }
+
       const rewardXp = attempt.correctAnswers * 10;
       const rewardCoins = attempt.correctAnswers * 2;
-      setUserXp((prev) => prev + rewardXp);
-      setUserCoins((prev) => prev + rewardCoins);
       setNotifications((prev) => [
         { id: `not-win-${Date.now()}`, title: "🏆 Test Completed!", message: `You earned +${rewardXp} XP and +${rewardCoins} Coins. Keep it up!`, date: "Just Now", type: "success", read: false },
         ...prev,
       ]);
-      setAttemptRegistered(attempt.id);
     }
     if (exitImmediately) {
       setActiveTab("dashboard");

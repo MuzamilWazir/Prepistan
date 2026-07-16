@@ -13,8 +13,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prepistan - Competitive Exam Prep",
+  title: "Tyaro kro - Competitive Exam Prep",
   description: "Pakistan's premier competitive exam preparation platform for CSS, PMS, FPSC, PPSC",
+  openGraph: {
+    title: "Tyaro kro - Competitive Exam Prep",
+    description: "Pakistan's premier competitive exam preparation platform for CSS, PMS, FPSC, PPSC",
+    url: "https://prepistan.vercel.app",
+    siteName: "Tyaro kro",
+    images: [
+      {
+        url: "/ogImage.png",
+        width: 1200,
+        height: 630,
+        alt: "Tyaro kro - Competitive Exam Prep",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tyaro kro - Competitive Exam Prep",
+    description: "Pakistan's premier competitive exam preparation platform for CSS, PMS, FPSC, PPSC",
+    images: ["/ogImage.png"],
+  },
 };
 
 const darkModeScript = `
